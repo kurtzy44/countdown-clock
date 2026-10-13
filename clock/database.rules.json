@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "timer": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'tWQoEIyTpAZAmio6Cmzu9EX9F0u1'"
+    }
+  }
+}
