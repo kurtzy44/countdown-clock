@@ -4,13 +4,34 @@
 (function () {
   var DB = "https://countdown-clock-1a35d-default-rtdb.firebaseio.com";
   var URL = DB + "/timer.json";
-  var st = null, lastData = 0;
+  var st = null, lastData = 0, offset = 0, bestRtt = 1e9;
+  function now() { return Date.now() + offset; }
+  // Learn the correct time from this website's server (the Date header), so the
+  // countdown is right even if this TV/computer's own clock is off.
+  function syncSample() {
+    try {
+      var xhr = new XMLHttpRequest(), t0 = Date.now();
+      xhr.open("HEAD", "display.js?sync=" + t0 + Math.random(), true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        var d = xhr.getResponseHeader("Date"), t1 = Date.now(), rtt = t1 - t0;
+        if (!d || xhr.status < 200 || xhr.status >= 400) return;
+        var server = new Date(d).getTime();
+        if (isNaN(server) || rtt > bestRtt) return;
+        bestRtt = rtt;
+        // Date header is whole seconds; assume the middle of that second.
+        offset = server + 500 - (t0 + rtt / 2);
+      };
+      xhr.send();
+    } catch (e) {}
+  }
+  function syncTime() { bestRtt = 1e9; for (var i = 0; i < 4; i++) setTimeout(syncSample, i * 700); }
   function $(id) { return document.getElementById(id); }
   function status(msg) { $("status").innerHTML = msg || ""; }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function left() {
     if (!st) return 0;
-    if (st.endAt) return Math.max(0, st.endAt - Date.now());
+    if (st.endAt) return Math.max(0, st.endAt - now());
     return st.remaining || 0;
   }
   function render() {
@@ -66,6 +87,8 @@
     } catch (e) { /* polling still runs */ }
   }
   window.onerror = function (msg) { status("Error: " + msg); };
+  syncTime();
+  setInterval(syncTime, 10 * 60 * 1000);
   status("Connecting...");
   poll();
   stream();
