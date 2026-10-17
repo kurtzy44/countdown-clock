@@ -5,8 +5,22 @@ export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 export const timerRef = ref(db, "timer");
 export let st = { duration: 600000, remaining: 600000, endAt: null, title: "" };
-let offset = 0;
-onValue(ref(db, ".info/serverTimeOffset"), s => offset = s.val() || 0);
+// Use the same time source as the display page: this website's server clock
+// (Date header). This keeps control and displays matched even if this
+// computer's own clock is off.
+let offset = 0, bestRtt = 1e9;
+function syncSample() {
+  const t0 = Date.now();
+  fetch("display.js?sync=" + t0 + Math.random(), { method: "HEAD", cache: "no-store" }).then(r => {
+    const d = r.headers.get("Date"), rtt = Date.now() - t0;
+    if (!d || !r.ok || rtt > bestRtt) return;
+    const server = new Date(d).getTime();
+    if (isNaN(server)) return;
+    bestRtt = rtt; offset = server + 500 - (t0 + rtt / 2);
+  }).catch(() => {});
+}
+function syncTime() { bestRtt = 1e9; for (let i = 0; i < 4; i++) setTimeout(syncSample, i * 700); }
+syncTime(); setInterval(syncTime, 10 * 60 * 1000);
 export const serverNow = () => Date.now() + offset;
 const $ = id => document.getElementById(id);
 export function left() { return st.endAt ? Math.max(0, st.endAt - serverNow()) : st.remaining; }
