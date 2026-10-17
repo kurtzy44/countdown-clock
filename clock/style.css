@@ -9,3 +9,8 @@ input,button{font-size:18px;padding:8px 12px;border-radius:6px;border:1px solid 
 input.n{width:70px}button{cursor:pointer}button:hover{background:#333}
 #status{position:fixed;bottom:8px;right:12px;font-size:13px;color:#888}
 .hidden{display:none!important}
+
+body.loading #clock,body.loading #title{visibility:hidden}
+body.loading #status{position:static;font-size:2.5vw;color:#777;margin-top:2vw;text-align:center;max-width:90vw}
+#msg{font-size:3.5vw;margin-top:2vw;color:#ddd;text-align:center;max-width:90vw;min-height:1em}
+body.loading #msg{visibility:hidden}

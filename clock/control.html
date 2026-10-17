@@ -6,6 +6,7 @@
  <div class="unit"><span id="mm">00</span><span class="lbl">Minutes</span></div><span>:</span>
  <div class="unit"><span id="ss">00</span><span class="lbl">Seconds</span></div>
 </div>
+<div id="msg"></div>
 <div id="status"></div>
 <div id="login" class="row">
  <input id="pw" type="password" placeholder="Password" style="width:180px">
@@ -20,19 +21,24 @@
  <button data-a="pause">Pause</button><button data-a="reset">Reset</button>
  <button id="signout">Lock controls</button>
 </div>
+<div id="msgrow" class="row hidden">
+ <input id="msgIn" placeholder="Message below the clock" style="width:420px" maxlength="200">
+ <button id="msgSave">Update message</button>
+ <button id="msgClear">Clear message</button>
+</div>
 <script type="module">
 import { controlEmail } from "./config.js";
 import { app, timerRef, st, left, serverNow } from "./clock.js";
-import { set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const auth = getAuth(app), $ = id => document.getElementById(id);
-onAuthStateChanged(auth, u => { $("login").classList.toggle("hidden", !!u); $("controls").classList.toggle("hidden", !u); });
+onAuthStateChanged(auth, u => { $("login").classList.toggle("hidden", !!u); $("controls").classList.toggle("hidden", !u); $("msgrow").classList.toggle("hidden", !u); });
 $("signin").onclick = () => signInWithEmailAndPassword(auth, controlEmail, $("pw").value)
   .catch(() => $("status").textContent = "Sign-in failed. Check the password.");
 $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("signin").click(); });
 $("signout").onclick = () => signOut(auth);
 function act(a) {
-  const cur = { duration: st.duration, remaining: st.remaining, endAt: st.endAt || null, title: st.title || "" };
+  const cur = { duration: st.duration, remaining: st.remaining, endAt: st.endAt || null, title: st.title || "", message: st.message || "" };
   const l = left();
   if (a === "set") { const ms = ((+$("h").value||0)*3600 + (+$("m").value||0)*60 + (+$("s").value||0))*1000;
     Object.assign(cur, { duration: ms, remaining: ms, endAt: null, title: $("t").value }); }
@@ -41,6 +47,10 @@ function act(a) {
   else if (a === "reset") { cur.remaining = cur.duration; cur.endAt = null; }
   set(timerRef, cur).catch(() => $("status").textContent = "Not allowed. Are you signed in?");
 }
+function saveMsg(text) { update(timerRef, { message: text }).catch(() => $("status").textContent = "Not allowed. Are you signed in?"); }
+$("msgSave").onclick = () => saveMsg($("msgIn").value);
+$("msgClear").onclick = () => { $("msgIn").value = ""; saveMsg(""); };
+$("msgIn").addEventListener("keydown", e => { if (e.key === "Enter") $("msgSave").click(); });
 document.querySelectorAll("[data-a]").forEach(b => b.onclick = () => act(b.dataset.a));
 document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT" || !auth.currentUser) return;
   if (e.key === " ") { act(st.endAt ? "pause" : "start"); e.preventDefault(); } if (e.key === "r") act("reset"); });

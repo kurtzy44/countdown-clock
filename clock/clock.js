@@ -18,6 +18,7 @@ function render() {
   $("ss").textContent = p(x % 60);
   $("clock").className = x > 900 ? "green" : x > 600 ? "yellow" : "red";
   $("title").textContent = st.title || "";
+  $("msg").textContent = st.message || "";
 }
 onValue(timerRef, s => { if (s.val()) st = s.val(); render(); $("status").textContent = ""; },
   () => $("status").textContent = "Cannot reach timer data");
